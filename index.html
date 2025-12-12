@@ -8,8 +8,14 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Interaktív háttér canvas -->
-    <canvas id="bgCanvas"></canvas>
+    <!-- CSS alapú háttér + glow buborékok -->
+    <div class="bg-gradient"></div>
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-orb orb-3"></div>
+
+    <!-- Kis, GPU-barát canvas “dísz” – nem full screen -->
+    <canvas id="bgCanvas" width="360" height="360"></canvas>
 
     <div class="theme-toggle" onclick="toggleTheme()" title="Téma váltás">
         <i class="bi bi-moon-stars-fill"></i>
@@ -28,7 +34,7 @@
             <button type="button" onclick="toggleDebugPanel()">×</button>
         </div>
         <div class="debug-body">
-            <div>FPS: <span id="debugFps">-</span></div>
+            <div>FPS (canvas): <span id="debugFps">-</span></div>
             <div>Átlag frame time: <span id="debugFrameTime">-</span> ms</div>
             <div>JS heap: <span id="debugHeap">n/a</span></div>
             <div>Logikai magok: <span id="debugCores">-</span></div>
