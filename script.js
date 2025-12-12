@@ -1,4 +1,4 @@
-// Color palette
+// Színpaletta
 const colors = [
     "#FF7F7F", "#FFB347", "#FFD700", "#90EE90", "#87CEEB", "#DDA0DD",
     "#FF69B4", "#F08080", "#FF6347", "#FFA500", "#FFD700", "#7FFF00",
@@ -10,77 +10,80 @@ let currentEditingTier = null;
 let tierCounter = 0;
 let confirmCallback = null;
 
-/* ===== Interaktív háttér (canvas + egér + extra partikulumok) ===== */
+/* ===== Kis, alacsony FPS-es canvas dísz =====
+   - 360x360, nem full screen
+   - 20 FPS körül limitált
+   - nincs blur filter, csak sima kis pontok
+   Ez sokkal olcsóbb, mint a full-screen blur. [web:24][web:48]
+*/
 let bgCanvas, bgCtx;
+let bgParticles = [];
 let bgMouseX = 0.5;
 let bgMouseY = 0.5;
-const bgParticles = [];
 
-// Dinamikus particles szám (felülethez igazítva, de clampelve)
-function getAdaptiveParticleCount() {
-    const area = window.innerWidth * window.innerHeight;
-    const base = area / 40000; // 1920x1080 ~ 50 körül
-    return Math.max(30, Math.min(90, Math.round(base)));
-}
-
-let BG_PARTICLE_COUNT = getAdaptiveParticleCount();
+const CANVAS_TARGET_FPS = 20;
+const CANVAS_FRAME_INTERVAL = 1000 / CANVAS_TARGET_FPS;
+let lastCanvasUpdate = performance.now();
 
 function initBackgroundCanvas() {
     bgCanvas = document.getElementById("bgCanvas");
     if (!bgCanvas) return;
     bgCtx = bgCanvas.getContext("2d");
 
-    function resize() {
-        bgCanvas.width = window.innerWidth;
-        bgCanvas.height = window.innerHeight;
-        BG_PARTICLE_COUNT = getAdaptiveParticleCount();
-        initParticles();
-    }
+    // Retina támogatás: devicePixelRatio skálázás
+    const dpr = window.devicePixelRatio || 1;
+    const cssWidth = bgCanvas.width;
+    const cssHeight = bgCanvas.height;
+    bgCanvas.width = cssWidth * dpr;
+    bgCanvas.height = cssHeight * dpr;
+    bgCtx.scale(dpr, dpr);
 
-    resize();
-    window.addEventListener("resize", resize);
+    initParticlesCanvas();
 
     window.addEventListener("mousemove", (e) => {
-        bgMouseX = e.clientX / window.innerWidth;
-        bgMouseY = e.clientY / window.innerHeight;
+        const rect = bgCanvas.getBoundingClientRect();
+        bgMouseX = (e.clientX - rect.left) / rect.width;
+        bgMouseY = (e.clientY - rect.top) / rect.height;
     });
 
-    requestAnimationFrame(drawBackground);
+    requestAnimationFrame(drawBackgroundCanvas);
 }
 
-function initParticles() {
+function initParticlesCanvas() {
     bgParticles.length = 0;
-    const w = bgCanvas.width;
-    const h = bgCanvas.height;
-    for (let i = 0; i < BG_PARTICLE_COUNT; i++) {
+    const w = 360;
+    const h = 360;
+    const count = 22; // fix, nagyon alacsony szám
+    for (let i = 0; i < count; i++) {
         bgParticles.push({
             x: Math.random() * w,
             y: Math.random() * h,
-            r: 1.2 + Math.random() * 2.5,
-            baseSpeed: 0.1 + Math.random() * 0.3,
+            r: 1.5 + Math.random() * 2,
+            speed: 10 + Math.random() * 20,
             angle: Math.random() * Math.PI * 2,
-            parallax: 0.3 + Math.random() * 0.7,
-            alpha: 0.25 + Math.random() * 0.35
+            alpha: 0.25 + Math.random() * 0.4
         });
     }
 }
 
-function updateParticles(delta) {
-    const w = bgCanvas.width;
-    const h = bgCanvas.height;
-    const centerX = w * bgMouseX;
-    const centerY = h * bgMouseY;
+function updateParticlesCanvas(delta) {
+    const w = 360;
+    const h = 360;
+
+    const centerX = w * (0.3 + bgMouseX * 0.4);
+    const centerY = h * (0.3 + bgMouseY * 0.4);
 
     bgParticles.forEach(p => {
-        const toMouseX = centerX - p.x;
-        const toMouseY = centerY - p.y;
-        const dist = Math.hypot(toMouseX, toMouseY) || 1;
-        const dirX = toMouseX / dist;
-        const dirY = toMouseY / dist;
+        p.angle += 0.0015 * delta;
+        const dirX = Math.cos(p.angle);
+        const dirY = Math.sin(p.angle);
 
-        const speed = p.baseSpeed * delta * 0.06;
-        p.x += Math.cos(p.angle) * speed + dirX * speed * p.parallax;
-        p.y += Math.sin(p.angle) * speed + dirY * speed * p.parallax * 0.5;
+        p.x += dirX * p.speed * (delta / 1000);
+        p.y += dirY * p.speed * (delta / 1000);
+
+        // enyhe gravitáció a center felé
+        p.x += (centerX - p.x) * 0.0007 * delta;
+        p.y += (centerY - p.y) * 0.0007 * delta;
 
         if (p.x < -10) p.x = w + 10;
         if (p.x > w + 10) p.x = -10;
@@ -89,90 +92,42 @@ function updateParticles(delta) {
     });
 }
 
-// FPS clamp / logic tick
-const TARGET_FPS = 60;
-const FRAME_INTERVAL = 1000 / TARGET_FPS;
-let lastFrameTime = performance.now();
-let lastLogicUpdate = performance.now();
-let particleFrameSkip = 0;
-
-function drawBackground(now) {
-    if (!bgCtx) return;
-    const delta = now - lastFrameTime;
-    lastFrameTime = now;
-
-    const logicDelta = now - lastLogicUpdate;
-    if (logicDelta >= FRAME_INTERVAL) {
-        updateParticles(logicDelta);
-        lastLogicUpdate = now;
+function drawBackgroundCanvas(now) {
+    const delta = now - lastCanvasUpdate;
+    if (delta < CANVAS_FRAME_INTERVAL) {
+        requestAnimationFrame(drawBackgroundCanvas);
+        return;
     }
+    lastCanvasUpdate = now;
 
-    const w = bgCanvas.width;
-    const h = bgCanvas.height;
+    const w = 360;
+    const h = 360;
 
-    const style = getComputedStyle(document.documentElement);
-    const c1 = style.getPropertyValue("--bg-gradient-start").trim() || "#1a1a2e";
-    const c2 = style.getPropertyValue("--bg-gradient-end").trim() || "#16213e";
-
-    bgCtx.setTransform(1, 0, 0, 1, 0, 0);
+    bgCtx.setTransform(1, 0, 0, 1, 0, 0); // dpr már be van állítva initnél
     bgCtx.clearRect(0, 0, w, h);
 
-    const grad = bgCtx.createLinearGradient(0, 0, w, h);
-    grad.addColorStop(0, c1);
-    grad.addColorStop(1, c2);
+    // háttér glow a canvasban
+    const grad = bgCtx.createRadialGradient(
+        w * 0.5, h * 0.5, 40,
+        w * 0.5, h * 0.5, 200
+    );
+    grad.addColorStop(0, "rgba(255,255,255,0.16)");
+    grad.addColorStop(0.4, "rgba(120,180,255,0.15)");
+    grad.addColorStop(1, "rgba(0,0,0,0)");
     bgCtx.fillStyle = grad;
     bgCtx.fillRect(0, 0, w, h);
 
-    const cx = w * bgMouseX;
-    const cy = h * bgMouseY;
+    updateParticlesCanvas(delta);
 
-    const glowGrad = bgCtx.createRadialGradient(
-        cx, cy, 0,
-        cx, cy, Math.max(w, h) * 0.6
-    );
-    glowGrad.addColorStop(0, "rgba(255,255,255,0.18)");
-    glowGrad.addColorStop(0.4, "rgba(255,255,255,0.08)");
-    glowGrad.addColorStop(1, "rgba(0,0,0,0)");
-    bgCtx.fillStyle = glowGrad;
-    bgCtx.fillRect(0, 0, w, h);
+    // kis “csillagok”
+    bgParticles.forEach(p => {
+        bgCtx.beginPath();
+        bgCtx.fillStyle = `rgba(255,255,255,${p.alpha})`;
+        bgCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        bgCtx.fill();
+    });
 
-    const swirlGrad = bgCtx.createRadialGradient(
-        cx + 80 * (bgMouseX - 0.5),
-        cy + 80 * (bgMouseY - 0.5),
-        0,
-        cx, cy,
-        Math.max(w, h) * 0.35
-    );
-    swirlGrad.addColorStop(0, "rgba(120,180,255,0.25)");
-    swirlGrad.addColorStop(0.5, "rgba(140,120,255,0.12)");
-    swirlGrad.addColorStop(1, "rgba(0,0,0,0)");
-    bgCtx.fillStyle = swirlGrad;
-    bgCtx.fillRect(0, 0, w, h);
-
-    // Blur-ölt csillagok: blur csak minden 2. frame-en
-    particleFrameSkip = (particleFrameSkip + 1) % 2;
-
-    bgCtx.save();
-    if (particleFrameSkip === 0) {
-        bgCtx.filter = "blur(1.2px)";
-        bgParticles.forEach(p => {
-            bgCtx.beginPath();
-            bgCtx.fillStyle = `rgba(255,255,255,${p.alpha})`;
-            bgCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-            bgCtx.fill();
-        });
-        bgCtx.filter = "none";
-    } else {
-        bgParticles.forEach(p => {
-            bgCtx.beginPath();
-            bgCtx.fillStyle = `rgba(255,255,255,${p.alpha})`;
-            bgCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-            bgCtx.fill();
-        });
-    }
-    bgCtx.restore();
-
-    requestAnimationFrame(drawBackground);
+    requestAnimationFrame(drawBackgroundCanvas);
 }
 
 /* ===================== Téma kezelés ===================== */
@@ -274,7 +229,7 @@ function createCard(itemDef) {
 
     const img = document.createElement("img");
     img.className = "card-thumb";
-    img.loading = "lazy"; // lazy load a képekre [web:24][web:34]
+    img.loading = "lazy";
     const imgUrl = getItemImageUrl(itemDef);
     if (imgUrl) img.src = imgUrl;
     img.alt = itemDef.name;
@@ -695,7 +650,7 @@ function toggleDebugPanel() {
     }
 }
 
-// FPS / frame time mérés
+// FPS / frame time mérés (a canvas loopra) [web:38]
 (function debugFrameLoop() {
     const now = performance.now();
     const delta = now - lastDebugSampleTime;
