@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
     <!-- Interaktív háttér canvas -->
     <canvas id="bgCanvas"></canvas>
 
@@ -17,8 +16,32 @@
         <i class="bi bi-sun-fill"></i>
     </div>
 
+    <!-- DEBUG GOMB -->
+    <div class="debug-toggle" onclick="toggleDebugPanel()" title="Debug">
+        <i class="bi bi-activity"></i>
+    </div>
+
+    <!-- DEBUG PANEL -->
+    <div id="debugPanel" class="debug-panel">
+        <div class="debug-header">
+            <span>Debug info</span>
+            <button type="button" onclick="toggleDebugPanel()">×</button>
+        </div>
+        <div class="debug-body">
+            <div>FPS: <span id="debugFps">-</span></div>
+            <div>Átlag frame time: <span id="debugFrameTime">-</span> ms</div>
+            <div>JS heap: <span id="debugHeap">n/a</span></div>
+            <div>Logikai magok: <span id="debugCores">-</span></div>
+            <div>WebGPU: <span id="debugWebgpu">-</span></div>
+            <div>WebGL: <span id="debugWebgl">-</span></div>
+            <div class="debug-note">
+                Valós CPU/GPU% és hőfok böngészőből nem olvasható, csak becsült terhelési adatok érhetők el. [web:4][web:16]
+            </div>
+        </div>
+    </div>
+
     <div class="container">
-        <h1 onclick="addTier()">Tier List Maker (Kattints új tier hozzáadásához)</h1>
+        <h1 onclick="addTier()">Tier List Maker – Kattints új tier hozzáadásához</h1>
 
         <div class="tiers-container" id="tiersContainer">
             <!-- Tier-ek dinamikusan kerülnek ide -->

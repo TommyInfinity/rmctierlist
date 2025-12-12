@@ -75,16 +75,21 @@
 }
 
 /* Alap layout */
-
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: none; /* gradientet a canvas rajzolja */
+    background: none;
     min-height: 100vh;
     padding: 20px;
     color: var(--text-primary);
     transition: color 0.3s ease;
     position: relative;
     overflow: hidden;
+}
+
+/* Segítség a GPU-kompozit réteghez drag alatt */
+.tiers-container,
+.cards-container {
+    will-change: transform;
 }
 
 .theme-toggle {
@@ -155,7 +160,6 @@ h1:hover {
 }
 
 /* Tier-ek */
-
 .tiers-container {
     background: var(--container-bg);
     border-radius: 10px;
@@ -229,7 +233,6 @@ h1:hover {
 }
 
 /* Elérhető elemek ablak */
-
 .cards-container {
     position: fixed;
     bottom: 20px;
@@ -291,8 +294,7 @@ h1:hover {
     overflow: auto;
 }
 
-/* Elérhető elemek grid – balra igazított, fix gap */
-
+/* Elérhető elemek grid */
 .cards-area {
     display: flex;
     flex-wrap: wrap;
@@ -307,8 +309,7 @@ h1:hover {
     transition: background 0.3s ease;
 }
 
-/* Kártyák Steam / custom thumbnail-lel */
-
+/* Kártyák */
 .card-item {
     width: 140px;
     height: 100px;
@@ -354,7 +355,6 @@ h1:hover {
 }
 
 /* Resizer handlek */
-
 .resizer {
     position: absolute;
     z-index: 1001;
@@ -421,8 +421,7 @@ h1:hover {
     cursor: e-resize;
 }
 
-/* Modálok + confirm – eredeti stílusaid (rövidítve, de funkcionális) */
-
+/* Modálok */
 .modal {
     display: none;
     position: fixed;
@@ -543,7 +542,6 @@ h1:hover {
 }
 
 /* Confirm modal extra */
-
 .confirm-modal {
     max-width: 600px;
 }
@@ -612,4 +610,80 @@ h1:hover {
 .btn-delete:hover {
     background: #d32f2f;
     transform: translateY(-2px);
+}
+
+/* DEBUG GOMB + PANEL */
+.debug-toggle {
+    position: fixed;
+    top: 20px;
+    right: 80px;
+    width: 50px;
+    height: 50px;
+    background: var(--container-bg);
+    border-radius: 50%;
+    box-shadow: 0 4px 12px var(--card-shadow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1000;
+    color: var(--text-primary);
+    transition: transform 0.2s ease, background 0.3s ease, color 0.3s ease;
+}
+
+.debug-toggle:hover {
+    transform: scale(1.1);
+    background: var(--button-hover-bg);
+    color: #fff;
+}
+
+.debug-panel {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    width: 260px;
+    background: var(--container-bg);
+    color: var(--text-primary);
+    border-radius: 10px;
+    box-shadow: 0 8px 20px var(--card-shadow);
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    font-size: 13px;
+}
+
+.debug-panel.active {
+    display: flex;
+}
+
+.debug-header {
+    padding: 8px 10px;
+    background: var(--button-hover-bg);
+    color: #fff;
+    border-radius: 10px 10px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+}
+
+.debug-header button {
+    background: transparent;
+    border: none;
+    color: inherit;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.debug-body {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.debug-note {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--text-secondary);
 }
