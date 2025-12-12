@@ -64,14 +64,75 @@
     }
 }
 
-/* Interaktív háttér canvas */
-#bgCanvas {
+/* CSS alapú háttér – nagyon olcsó GPU-n, csak compositing [web:24][web:34] */
+.bg-gradient {
     position: fixed;
     inset: 0;
-    width: 100vw;
-    height: 100vh;
+    background: radial-gradient(circle at 0% 0%, rgba(255,255,255,0.12), transparent 55%),
+                radial-gradient(circle at 100% 100%, rgba(255,255,255,0.1), transparent 55%),
+                linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+    z-index: -3;
+}
+
+/* “Glow buborékok” – CSS animáció, kis számú, eye-catching, olcsó */
+.bg-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(40px);
+    opacity: 0.65;
+    mix-blend-mode: screen;
+    animation: float-orb 18s ease-in-out infinite alternate;
+    z-index: -2;
+}
+
+.orb-1 {
+    width: 220px;
+    height: 220px;
+    background: radial-gradient(circle, #ff9a9e, transparent 70%);
+    top: 5%;
+    left: 10%;
+}
+
+.orb-2 {
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle, #a18cd1, transparent 70%);
+    bottom: 10%;
+    right: 15%;
+    animation-delay: -4s;
+}
+
+.orb-3 {
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, #fbc2eb, transparent 70%);
+    top: 45%;
+    right: 5%;
+    animation-delay: -8s;
+}
+
+@keyframes float-orb {
+    0% {
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+        transform: translate3d(20px, -30px, 0) scale(1.05);
+    }
+    100% {
+        transform: translate3d(-15px, 25px, 0) scale(1.02);
+    }
+}
+
+/* Kis canvas – nem full screen, kevés pixel, alacsony FPS [web:24][web:48] */
+#bgCanvas {
+    position: fixed;
+    top: 15%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(360px, 80vw);
+    height: auto;
     z-index: -1;
-    display: block;
+    opacity: 0.80;
 }
 
 /* Alap layout */
@@ -86,7 +147,7 @@ body {
     overflow: hidden;
 }
 
-/* Segítség a GPU-kompozit réteghez drag alatt */
+/* GPU-barát kompozíció drag közben [web:34][web:47] */
 .tiers-container,
 .cards-container {
     will-change: transform;
@@ -161,20 +222,21 @@ h1:hover {
 
 /* Tier-ek */
 .tiers-container {
-    background: var(--container-bg);
-    border-radius: 10px;
-    padding: 20px;
+    background: rgba(15, 52, 96, 0.97);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 24px;
     margin-bottom: 20px;
-    box-shadow: 0 8px 16px var(--card-shadow);
+    box-shadow: 0 14px 40px rgba(0,0,0,0.55);
     transition: background 0.3s ease;
 }
 
 .tier {
     display: flex;
     margin-bottom: 10px;
-    border-radius: 8px;
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 2px 5px var(--card-shadow);
+    box-shadow: 0 2px 8px var(--card-shadow);
     position: relative;
 }
 
@@ -183,10 +245,10 @@ h1:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
+    font-weight: 800;
     font-size: 1.5em;
     color: white;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.45);
     padding: 10px;
 }
 
@@ -194,7 +256,7 @@ h1:hover {
     flex: 1;
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
+    gap: 6px;
     padding: 10px;
     background: var(--tier-items-bg);
     min-height: 80px;
@@ -210,8 +272,8 @@ h1:hover {
     display: flex;
     flex-direction: column;
     background: var(--tier-controls-bg);
-    padding: 5px;
-    gap: 5px;
+    padding: 6px;
+    gap: 6px;
     transition: background 0.3s ease;
 }
 
@@ -221,7 +283,7 @@ h1:hover {
     border: none;
     padding: 8px;
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: 6px;
     transition: all 0.2s;
     font-size: 16px;
 }
@@ -229,7 +291,7 @@ h1:hover {
 .tier-controls button:hover {
     background: var(--button-hover-bg);
     color: white;
-    transform: scale(1.1);
+    transform: scale(1.08);
 }
 
 /* Elérhető elemek ablak */
@@ -239,9 +301,10 @@ h1:hover {
     right: 20px;
     width: 400px;
     height: 300px;
-    background: var(--container-bg);
-    border-radius: 10px;
-    box-shadow: 0 8px 20px var(--card-shadow);
+    background: rgba(15, 52, 96, 0.97);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.6);
     transition: background 0.3s ease;
     display: flex;
     flex-direction: column;
@@ -319,11 +382,11 @@ h1:hover {
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: move;
     font-weight: bold;
-    box-shadow: 0 2px 4px var(--card-shadow);
-    transition: transform 0.2s;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.45);
+    transition: transform 0.2s, box-shadow 0.2s;
     text-align: center;
     padding: 6px;
     font-size: 0.75em;
@@ -331,7 +394,8 @@ h1:hover {
 }
 
 .card-item:hover {
-    transform: scale(1.05);
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.55);
 }
 
 .card-item.dragging {
@@ -365,29 +429,10 @@ h1:hover {
     height: 10px;
 }
 
-.resizer.tl {
-    top: 0;
-    left: 0;
-    cursor: nw-resize;
-}
-
-.resizer.tr {
-    top: 0;
-    right: 0;
-    cursor: ne-resize;
-}
-
-.resizer.bl {
-    bottom: 0;
-    left: 0;
-    cursor: sw-resize;
-}
-
-.resizer.br {
-    bottom: 0;
-    right: 0;
-    cursor: se-resize;
-}
+.resizer.tl { top: 0; left: 0; cursor: nw-resize; }
+.resizer.tr { top: 0; right: 0; cursor: ne-resize; }
+.resizer.bl { bottom: 0; left: 0; cursor: sw-resize; }
+.resizer.br { bottom: 0; right: 0; cursor: se-resize; }
 
 .resizer.t {
     top: 0;
@@ -442,10 +487,10 @@ h1:hover {
 .modal-content {
     background: var(--container-bg);
     padding: 30px;
-    border-radius: 10px;
+    border-radius: 16px;
     max-width: 500px;
     width: 90%;
-    box-shadow: 0 10px 25px var(--card-shadow);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.6);
     transition: background 0.3s ease;
 }
 
